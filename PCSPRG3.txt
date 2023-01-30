@@ -1,0 +1,174 @@
+      *************************************************************
+      *                    ABC CORPORATION                        *
+      *                                                           *
+      *              COBOL Z/OS PROGRAM DESCRIPTION               *
+      *************************************************************
+      * PROGRAM DESCRIPTION:                                      *
+      * Sub-program to help print out the rathing for each        *
+      * salesperson in each department                            *
+      *                                                           *
+      * INPUT DD NAME     FILE IDENTIFIER     FILE DESCRIPTION    *
+      * --------------    ---------------     ----------------    *
+      *
+      *                                                           *
+      * OUTPUT DD  NAME    FILE IDENTIFIER     FILE DESCRITION    *
+      * ---------------    ---------------     ---------------    *
+      *
+      *                                                           *
+      * COPYBOOKS          DESCRIPTION                            *
+      * ---------          -----------                            *
+      * CCS2STAR          Fields required for individual sales-    *
+      *                    person information input               *
+      *                                                           *
+      *************************************************************
+      *************************************************************
+      *                 C H A N G E   L O G                       *
+      *************************************************************
+      *                                                           *
+      * VER. NO.  CHANGED BY           IMPLEMENTATION DATE        *
+      * --------  ----------           -------------------        *
+      * PCS2PRG3  JASSIKA ARANDIA       AUG. 10, 2020             *
+      * DESCRIPTION OF CHANGE:                                    *
+      * ----------------------                                    *
+      *                                                           *
+      *************************************************************
+
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID.  PCS2PRG3.
+       AUTHOR. JASSIKA ARANDIA.
+       ENVIRONMENT DIVISION.
+       DATA DIVISION.
+       FILE SECTION.
+       WORKING-STORAGE SECTION.
+      * COPY CCS2STAR.
+       01 WS-DEPT-RATINGS.
+          05  FILLER                     PIC X(2)  VALUE "10".
+          05  WS-RATING-VALUES-10.
+               10  FILLER                 PIC X(4)   VALUE X"0000000C".
+               10  FILLER                 PIC X(4)   VALUE X"2999999C".
+               10  FILLER                 PIC X(5)   VALUE "    *".
+               10  FILLER                 PIC X(4)   VALUE X"3000000C".
+               10  FILLER                 PIC X(4)   VALUE X"4999999C".
+               10  FILLER                 PIC X(5)   VALUE "   **".
+               10  FILLER                 PIC X(4)   VALUE X"5000000C".
+               10  FILLER                 PIC X(4)   VALUE X"6999999C".
+               10  FILLER                 PIC X(5)   VALUE "  ***".
+               10  FILLER                 PIC X(4)   VALUE X"7000000C".
+               10  FILLER                 PIC X(4)   VALUE X"8999999C".
+               10  FILLER                 PIC X(5)   VALUE " ****".
+               10  FILLER                 PIC X(4)   VALUE X"9000000C".
+               10  FILLER                 PIC X(4)   VALUE X"9999999C".
+               10  FILLER                 PIC X(5)   VALUE "*****".
+           05  FILLER                     PIC X(2)  VALUE "20".
+           05  WS-RATING-VALUES-20.
+               10  FILLER                 PIC X(4)   VALUE X"0000000C".
+               10  FILLER                 PIC X(4)   VALUE X"1599999C".
+               10  FILLER                 PIC X(5)   VALUE "    *".
+               10  FILLER                 PIC X(4)   VALUE X"1600000C".
+               10  FILLER                 PIC X(4)   VALUE X"3599999C".
+               10  FILLER                 PIC X(5)   VALUE "   **".
+               10  FILLER                 PIC X(4)   VALUE X"3600000C".
+               10  FILLER                 PIC X(4)   VALUE X"5599999C".
+               10  FILLER                 PIC X(5)   VALUE "  ***".
+               10  FILLER                 PIC X(4)   VALUE X"5600000C".
+               10  FILLER                 PIC X(4)   VALUE X"7599999C".
+               10  FILLER                 PIC X(5)   VALUE " ****".
+               10  FILLER                 PIC X(4)   VALUE X"7600000C".
+               10  FILLER                 PIC X(4)   VALUE X"9999999C".
+               10  FILLER                 PIC X(5)   VALUE "*****".
+         05  FILLER                       PIC X(2)   VALUE "30".
+           05  WS-RATING-VALUES-30.
+               10  FILLER                 PIC X(4)   VALUE X"0000000C".
+               10  FILLER                 PIC X(4)   VALUE X"2499999C".
+               10  FILLER                 PIC X(5)   VALUE "    *".
+               10  FILLER                 PIC X(4)   VALUE X"2500000C".
+               10  FILLER                 PIC X(4)   VALUE X"4599999C".
+               10  FILLER                 PIC X(5)   VALUE "   **".
+               10  FILLER                 PIC X(4)   VALUE X"4600000C".
+               10  FILLER                 PIC X(4)   VALUE X"6499999C".
+               10  FILLER                 PIC X(5)   VALUE "  ***".
+               10  FILLER                 PIC X(4)   VALUE X"6500000C".
+               10  FILLER                 PIC X(4)   VALUE X"7599999C".
+               10  FILLER                 PIC X(5)   VALUE " ****".
+               10  FILLER                 PIC X(4)   VALUE X"7600000C".
+               10  FILLER                 PIC X(4)   VALUE X"9999999C".
+               10  FILLER                 PIC X(5)   VALUE "*****".
+           05  FILLER                     PIC X(2)  VALUE "40".
+           05  WS-RATING-VALUES-40.
+               10  FILLER                 PIC X(4)   VALUE X"0000000C".
+               10  FILLER                 PIC X(4)   VALUE X"1299999C".
+               10  FILLER                 PIC X(5)   VALUE "    *".
+               10  FILLER                 PIC X(4)   VALUE X"1300000C".
+               10  FILLER                 PIC X(4)   VALUE X"2499999C".
+               10  FILLER                 PIC X(5)   VALUE "   **".
+               10  FILLER                 PIC X(4)   VALUE X"2500000C".
+               10  FILLER                 PIC X(4)   VALUE X"5599999C".
+               10  FILLER                 PIC X(5)   VALUE "  ***".
+               10  FILLER                 PIC X(4)   VALUE X"5600000C".
+               10  FILLER                 PIC X(4)   VALUE X"7499999C".
+               10  FILLER                 PIC X(5)   VALUE " ****".
+               10  FILLER                 PIC X(4)   VALUE X"7500000C".
+               10  FILLER                 PIC X(4)   VALUE X"9999999C".
+               10  FILLER                 PIC X(5)   VALUE "*****".
+           05  FILLER                     PIC X(2)  VALUE "50".
+           05  WS-RATING-VALUES-50.
+               10  FILLER                 PIC X(4)   VALUE X"0000000C".
+               10  FILLER                 PIC X(4)   VALUE X"2999999C".
+               10  FILLER                 PIC X(5)   VALUE "    *".
+               10  FILLER                 PIC X(4)   VALUE X"3000000C".
+               10  FILLER                 PIC X(4)   VALUE X"3999999C".
+               10  FILLER                 PIC X(5)   VALUE "   **".
+               10  FILLER                 PIC X(4)   VALUE X"4000000C".
+               10  FILLER                 PIC X(4)   VALUE X"5599999C".
+               10  FILLER                 PIC X(5)   VALUE "  ***".
+               10  FILLER                 PIC X(4)   VALUE X"5600000C".
+               10  FILLER                 PIC X(4)   VALUE X"7599999C".
+               10  FILLER                 PIC X(5)   VALUE " ****".
+               10  FILLER                 PIC X(4)   VALUE X"7600000C".
+               10  FILLER                 PIC X(4)   VALUE X"9999999C".
+               10  FILLER                 PIC X(5)   VALUE "*****".
+
+        01  WS-RATING-TABLE REDEFINES WS-DEPT-RATINGS.
+            05 WS-DEPT-GROUP OCCURS 5 TIMES.
+               10 WS-DEPT-NO              PIC XX.
+               10  WS-RATING-GROUP OCCURS 5 TIMES.
+                   15  WS-SLSRNG-MIN-VAL  PIC 9(5)V99 COMP-3.
+                   15  WS-SLSRNG-MAX-VAL  PIC 9(5)V99 COMP-3.
+                   15  WS-STAR-RATING     PIC X(5).
+         01  WS-TEMP-FIELDS.
+            05 WS-DEPT-SUB               PIC 9(2)       COMP.
+            05 WS-RATING-SUB             PIC 9(2)       COMP.
+            05 WS-SALES-AMOUNT           PIC S9(7)V99   COMP-3.
+            05 WS-SALES-DEPT             PIC X(2).
+
+        LINKAGE SECTION.
+        77 LS-DEPT              PIC X(2).
+        77 LS-SALES             PIC 9(7)V99         COMP-3.
+        77 LS-RATING            PIC X(5).
+
+        PROCEDURE DIVISION USING LS-DEPT LS-SALES LS-RATING.
+        U100-RATING-STAR.
+             MOVE LS-SALES TO WS-SALES-AMOUNT
+             MOVE LS-DEPT TO WS-SALES-DEPT
+             PERFORM WITH TEST AFTER
+               VARYING WS-DEPT-SUB FROM 1 BY 1 UNTIL
+                   WS-SALES-DEPT = WS-DEPT-NO(WS-DEPT-SUB)
+                   OR WS-DEPT-SUB = 6
+             END-PERFORM
+             IF WS-DEPT-SUB < 6
+                 IF WS-SALES-AMOUNT NOT EQUAL ZERO
+                   PERFORM WITH TEST AFTER
+                    VARYING WS-RATING-SUB FROM 1 BY 1 UNTIL
+                   WS-SALES-AMOUNT >
+                         WS-SLSRNG-MIN-VAL (WS-DEPT-SUB, WS-RATING-SUB)
+                   AND
+                    WS-SALES-AMOUNT <
+                         WS-SLSRNG-MAX-VAL (WS-DEPT-SUB, WS-RATING-SUB)
+               MOVE WS-STAR-RATING (WS-DEPT-SUB, WS-RATING-SUB) TO
+                 LS-RATING
+           END-PERFORM
+           ELSE
+             MOVE "N/R" TO LS-RATING
+           END-IF
+           EXIT PROGRAM.
+

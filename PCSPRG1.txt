@@ -1,0 +1,490 @@
+      *************************************************************
+      *                    ABC CORPORATION                        *
+      *                                                           *
+      *              COBOL Z/OS PROGRAM DESCRIPTION               *
+      *************************************************************
+      * PROGRAM DESCRIPTION:                                      *
+      * This program reads in a data of salesperson in different  *
+      * Prints the data and computes each salesperson net sales   *
+      * and commission. This program also prints the branch totals*
+      * and the grand totals.                                     *
+      *                                                           *
+      * INPUT DD NAME     FILE IDENTIFIER     FILE DESCRIPTION    *
+      * --------------    ---------------     ----------------    *
+      * SLSPMAST           SALES-MASTER        File containing    *
+      *                                        salesperson info   *
+      *                                                           *
+      * OUTPUT DD  NAME    FILE IDENTIFIER     FILE DESCRITION    *
+      * ---------------    ---------------     ---------------    *
+      * SALES-REPORT         PRNT-REC          Print file summary *
+      *                                        information        *
+      *                                                           *
+      * COPYBOOKS          DESCRIPTION                            *
+      * ---------          -----------                            *
+      * CCS1SLP            Fields required for individual sales-  *
+      * CCS2SLST           person information input               *
+      * CCS2SLSW
+      *************************************************************
+      *************************************************************
+      *                 C H A N G E   L O G                       *
+      *************************************************************
+      *                                                           *
+      * VER. NO.  CHANGED BY           IMPLEMENTATION DATE        *
+      * --------  ----------           -------------------        *
+      * PCS2PRG1  JASSIKA ARANDIA       AUG. 10, 2020             *
+      * DESCRIPTION OF CHANGE:                                    *
+      * ----------------------                                    *
+      *                                                           *
+      *************************************************************
+
+
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID.  PCS2PRG1.
+       AUTHOR. JASSIKA ARANDIA.
+       ENVIRONMENT DIVISION.
+       CONFIGURATION SECTION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+            SELECT SALESMAST   ASSIGN TO SLSPKS
+             ORGANIZATION IS INDEXED
+             ACCESS IS RANDOM
+             RECORD KEY IS SALESPERSON-NO
+             ALTERNATE KEY IS SALESPERSON-BRANCH-NO WITH DUPLICATES
+                      FILE STATUS IS WS-IN-STATUS.
+            SELECT SALESTRANS ASSIGN TO SLSTRANS
+            FILE STATUS IS WS-TRN-STATUS.
+            SELECT SALES-REPORT    ASSIGN TO PRNT.
+
+       DATA DIVISION.
+
+       FILE SECTION.
+       FD  SALESMAST.
+
+      *    COPY CCS2SLSP.
+       01  SALESPERSON-MASTER.
+           05 SALESPERSON-NO           PIC X(5).
+           05 SALESPERSON-LAST-NAME    PIC X(15).
+           05 SALESPERSON-FIRST-NAME   PIC X(10).
+           05 SALESPERSON-GROSS-SALES  PIC 9(5)V99.
+           05 SALESPERSON-RETURN-SALES PIC 9(4)V99.
+           05 SALESPERSON-BRANCH-NO    PIC X(5).
+           05 SALESPERSON-COMM-RATE    PIC V9999.
+       01  INPUT-REC                   PIC X(52).
+
+       FD  SALESTRANS
+           RECORDING MODE IS F.
+
+      *     COPY CCS2SLST.
+      ******************************************************
+      * COPYBOOK CCS2SLST
+      * SALES TRANSACTION FILE LAYOUT
+      * FOR CASE STUDY #2
+      ******************************************************
+       01 SALES-TRANSACTION.
+           05 TRANS-NO            PIC 9(5).
+           05 TRANS-TYPE          PIC X.
+              88 TRANS-ADD                 VALUE 'A'.
+              88 TRANS-DEL                 VALUE 'D'.
+              88 TRANS-CHG                 VALUE 'C'.
+              88 TRANS-SALE                VALUE 'S'.
+              88 TRANS-RET                 VALUE 'R'.
+           05 TRANS-SALESPERSON-NO    PIC 9(5).
+           05 TRANS-DATE            PIC X(6).
+           05 TRANS-DATA            PIC X(34).
+       FD  SALES-REPORT
+           RECORDING MODE IS F.
+       01  PRNT-REC                   PIC X(125).
+
+
+       WORKING-STORAGE SECTION.
+      * COPY CCS2SLSW.
+      ******************************************************
+      * COPYBOOK CCS2SLSW
+      * SWORKING STORAGE TRANSACTION LAYOUT
+      * FOR CASE STUDY #2
+      ******************************************************
+       01 WS-TRANS-SALE.
+           05 WS-SALES-AMOUNT      PIC 9(5)V99.
+           05 WS-DISCOUNT-PCT      PIC V99.
+           05 FILLER               PIC X(25).
+
+       01 WS-TRANS-RETURN.
+           05 WS-RETURN-AMOUNT      PIC 9(5)V99.
+           05 FILLER                PIC X(27).
+
+       01 WS-TRANS-MAINTENANCE.
+           05 WS-TRANS-LAST-NAME    PIC X(15).
+           05 WS-TRANS-FIRST-NAME   PIC X(10).
+           05 WS-TRANS-BRANCH-NO    PIC 9(3).
+           05 WS-TRANS-DEPT-NO      PIC 9(2).
+           05 WS-TRANS-COMM-RATE    PIC V9999.
+      ******************************************************
+      *                     WS-SWITCHES                    *
+      ******************************************************
+       01 WS-SWITCHES.
+         05  WS-SALESMAST-EOF-SWITCH     PIC X       VALUE "N".
+            88  WS-SALESMAST-NOT-EOF                 VALUE "N".
+            88  WS-SALESMAST-EOF                     VALUE "Y".
+
+         05  WS-SALESTRANS-EOF-SWITCH    PIC X       VALUE 'N'.
+            88  WS-SALESTRANS-NOT-EOF                VALUE 'N'.
+            88  WS-SALESTRANS-EOF                    VALUE 'Y'.
+      **************************************************************
+      *                 TRANSACTION LOG HEADERS 1                  *
+      **************************************************************
+       01  WS-HEADING-LINE-1.
+           05  FILLER                 PIC X(5)      VALUE SPACES.
+           05  FILLER                 PIC X(6)      VALUE "PAGE  ".
+           05  WS-HL1-PAGENO          PIC Z9.
+           05  FILLER                 PIC X(36)     VALUE SPACES.
+           05  FILLER                 PIC X(3)      VALUE "ABC".
+           05  FILLER                 PIC X(1)      VALUE SPACES.
+           05  FILLER                 PIC X(11)     VALUE "CORPORATION".
+           05  FILLER                 PIC X(30)      VALUE SPACES.
+           05  WS-HL1-MONTH           PIC 9(2).
+           05  FILLER                 PIC X(1)      VALUE "/".
+           05  WS-HL1-DAY             PIC 9(2).
+           05  FILLER                 PIC X(1)      VALUE "/".
+           05  WS-HL1-YEAR            PIC 9(4).
+           05  FILLER                 PIC X         VALUE SPACES.
+      **************************************************************
+      *                  TRANSACTION LOG HEADERS 2                 *
+      **************************************************************
+       01  WS-HEADING-LINE-2.
+           05  FILLER                 PIC X(46)    VALUE SPACES.
+           05  FILLER                 PIC X(5)     VALUE 'SALES'.
+           05  FILLER                 PIC X(1)     VALUE SPACES.
+           05  FILLER                 PIC X(11)    VALUE 'TRANSACTION'.
+           05  FILLER                 PIC X(1)     VALUE SPACES.
+           05  FILLER                 PIC X(3)     VALUE 'LOG'.
+      **************************************************************
+      *                 TRANSACTION LOG HEADERS 3                 *
+      **************************************************************
+       01  WS-HEADING-LINE-3.
+           05  FILLER                 PIC X(2)      VALUE SPACES.
+           05  FILLER                 PIC X(9)      VALUE 'TRANS NO.'.
+           05  FILLER                 PIC X(1)      VALUE SPACES.
+           05  FILLER                 PIC X(11)     VALUE 'SALESPERSON'.
+           05  FILLER                 PIC X(4)      VALUE SPACES.
+           05  FILLER                 PIC X(10)     VALUE 'TRANS DATE'.
+           05  FILLER                 PIC X(9)      VALUE SPACES.
+           05  FILLER                 PIC X(4)      VALUE 'TYPE'.
+           05  FILLER                 PIC X(10)     VALUE SPACES.
+           05  FILLER                 PIC X(6)      VALUE 'AMOUNT'.
+      **************************************************************
+      *                  TRANSACTION LOG HEADERS DETAIL            *
+      **************************************************************
+       01  WS-TRANS-HEADER.
+           05  FILLER                 PIC X(2)      VALUE SPACES.
+           05  WS-TRANS-NO            PIC 9(5)      VALUE ZERO.
+           05  FILLER                 PIC X(5)      VALUE SPACES.
+           05  WS-TRANS-SLSP-NO       PIC 9(5)      VALUE ZERO.
+           05  FILLER                 PIC X(10)     VALUE SPACES.
+           05  WS-TRANS-YEAR          PIC 9(2).
+           05  FILLER                 PIC X(1)      VALUE "/".
+           05  WS-TRANS-MONTH         PIC 9(2).
+           05  FILLER                 PIC X(1)      VALUE "/".
+           05  WS-TRANS-DAY           PIC 9(2).
+           05  FILLER                 PIC X(12)     VALUE SPACES.
+           05  WS-TRANS-TYPE          PIC X(7)      VALUE ZERO.
+           05  FILLER                 PIC X(3)      VALUE SPACES.
+           05  WS-TRANS-CHNGE-DATA    PIC X(12).
+
+      **************************************************************
+      *             TRANSACTION COUNTER HEADER LINES            *
+      **************************************************************
+       01 WS-SALES-CTR-H1.
+           05 FILLER                 PIC X(11)      VALUE '# OF SALES '.
+           05 FILLER                 PIC X(7)       VALUE 'TRANS '.
+           05 WS-SALES-HCTR          PIC 9(3).
+       01 WS-RETURN-CTR-H2.
+           05 FILLER                 PIC X(11)      VALUE '# OF RETURN'.
+           05 FILLER                 PIC X(7)       VALUE ' TRANS '.
+           05 WS-RETURN-HCTR         PIC 9(3).
+       01 WS-ADD-CTR-H3.
+           05 FILLER                 PIC X(9)       VALUE '# OF ADD '.
+           05 FILLER                 PIC X(7)       VALUE 'TRANS '.
+           05  FILLER                PIC X(3)       VALUE SPACES.
+           05 WS-ADD-HCTR            PIC 9(3).
+       01 WS-DEL-CTR-H4.
+           05 FILLER                 PIC X(9)       VALUE '# OF DEL '.
+           05 FILLER                 PIC X(7)       VALUE 'TRANS '.
+           05  FILLER                PIC X(3)       VALUE SPACES.
+           05 WS-DEL-HCTR            PIC 9(3).
+       01 WS-CHANGE-CTR-H5.
+           05 FILLER                 PIC X(11)      VALUE '# OF CHANGE'.
+           05 FILLER                 PIC X(7)       VALUE ' TRANS '.
+           05 WS-CHANGE-HCTR         PIC 9(3).
+       01 WS-INVALID-CTR-H6.
+           05 FILLER                 PIC X(12)     VALUE '# OF INVALID'.
+           05 FILLER                 PIC X(7)       VALUE ' TRANS '.
+           05 WS-INVALID-HCTR         PIC 9(3).
+      *************************************************************
+      *             TRANSACTION COUNTERS           *
+      **************************************************************
+       01 WS-TRANS-COUNTERS.
+           05 WS-ADD-COUNTER           PIC S9(3)  COMP-3    VALUE ZERO.
+           05 WS-DEL-COUNTER           PIC S9(3)  COMP-3    VALUE ZERO.
+           05 WS-SALES-COUNTER         PIC S9(3)  COMP-3    VALUE ZERO.
+           05 WS-RETURN-COUNTER        PIC S9(3)  COMP-3    VALUE ZERO.
+           05 WS-CHANGE-COUNTER        PIC S9(3)  COMP-3    VALUE ZERO.
+           05 WS-INVALID-COUNTER       PIC S9(3)  COMP-3    VALUE ZERO.
+
+       01 WS-PAGE-NUM.
+           05 PG-COUNTER               PIC S9(3)  COMP-3    VALUE ZERO.
+       01 WS-HEADER-DATE.
+           05 WS-DATE-YEAR             PIC X(4).
+           05 WS-DATE-MONTH            PIC XX.
+           05 WS-DATE-DAY              PIC XX.
+       01 WS-TRANS-DATE.
+           05 WS-TRANSDATE-YEAR        PIC X(2).
+           05 WS-TRANSDATE-MONTH       PIC XX.
+           05 WS-TRANSDATE-DAY         PIC XX.
+       01 WS-BRANCH-KEY.
+           03 WS-BRANCH-NO             PIC 9(3).
+           03 WS-DEPT-NO                PIC 9(2).
+
+       01 WS-EDIT-FIELDS.
+           05 WS-RET-SALES             PIC S9(5)V99 COMP-3 VALUE ZERO.
+           05 WS-RET-TRANS-AMNT        PIC $$$,$$$.99CR.
+           05 WS-SALES-TRANS-AMT       PIC $$$,$$$.99      VALUE ZERO.
+       01 WS-TEMP-SALES                PACKED-DECIMAL.
+           05 WS-SALES-TEMP            PIC 9(6)V99.
+      **************************************************************
+      *                     ERROR LINE LAYOUT                      *
+      **************************************************************
+       01 WS-ERROR-LINE.
+            05 FILLER                    PIC X(1)     VALUE SPACES.
+            05 WS-ERR-TRN-NO             PIC 9(5).
+            05 FILLER                    PIC X(7)     VALUE SPACES.
+            05 WS-ER-PROBLEM             PIC X(30).
+            05 FILLER                    PIC X        VALUE SPACES.
+            05 WS-ERR-IDX-STATUS         PIC X(3).
+            05 FILLER                    PIC X(5)      VALUE SPACES.
+
+            03  WS-IN-STATUS               PIC XX       VALUE SPACES.
+            03  WS-TRN-STATUS              PIC XX       VALUE SPACES.
+
+      **************************************************************
+      *               START OF PROCEDURE DIVISION                  *
+      **************************************************************
+       PROCEDURE DIVISION.
+       A000-INITIALIZATION.
+           OPEN INPUT SALESTRANS
+                I-O SALESMAST
+                OUTPUT SALES-REPORT.
+           IF WS-IN-STATUS NOT EQUAL "00"
+               THEN
+               DISPLAY "FILE ERROR WS-IN-STATUS = ", WS-IN-STATUS
+           ELSE
+               PERFORM U200-DATE-FORMAT-HEAD
+               PERFORM W100-WRITE-HEADERS
+               PERFORM C100-PROCESS-TRANSACTION
+                       UNTIL WS-SALESTRANS-EOF
+      *         PERFORM W300-WRITE-COUNTERS
+               CLOSE  SALESMAST
+                      SALESTRANS
+                      SALES-REPORT
+           END-IF.
+           STOP RUN.
+
+
+       U200-DATE-FORMAT-HEAD.
+           ACCEPT WS-HEADER-DATE FROM DATE YYYYMMDD.
+                 MOVE WS-DATE-MONTH TO WS-HL1-MONTH.
+                 MOVE WS-DATE-DAY   TO WS-HL1-DAY.
+                 MOVE WS-DATE-YEAR  TO WS-HL1-YEAR.
+
+       U100-MOVE-TRANS-TO-SLSP.
+            MOVE WS-TRANS-LAST-NAME TO SALESPERSON-LAST-NAME
+            MOVE WS-TRANS-FIRST-NAME  TO SALESPERSON-FIRST-NAME
+            MOVE WS-TRANS-COMM-RATE TO SALESPERSON-COMM-RATE
+            MOVE WS-TRANS-BRANCH-NO TO WS-BRANCH-NO
+            MOVE WS-TRANS-DEPT-NO  TO WS-DEPT-NO
+            MOVE WS-BRANCH-KEY TO SALESPERSON-BRANCH-NO.
+
+       U300-PRINT-TRANSACTION-LINE.
+            MOVE TRANS-NO TO WS-TRANS-NO
+            MOVE TRANS-SALESPERSON-NO TO WS-TRANS-SLSP-NO
+            MOVE TRANS-DATE TO WS-TRANS-DATE
+            MOVE WS-TRANSDATE-YEAR TO WS-TRANS-YEAR
+            MOVE WS-TRANSDATE-MONTH TO WS-TRANS-MONTH
+            MOVE WS-TRANSDATE-DAY TO WS-TRANS-DAY
+            WRITE PRNT-REC FROM WS-TRANS-HEADER.
+
+       U400-ERROR-VALIDATION.
+           COMPUTE WS-INVALID-COUNTER = WS-INVALID-COUNTER + 1
+           MOVE TRANS-NO TO WS-ERR-TRN-NO
+           MOVE 'PROBLEM DOING XXXXX STATUS IS:' TO WS-ER-PROBLEM
+           MOVE WS-IN-STATUS TO WS-ERR-IDX-STATUS
+           WRITE PRNT-REC FROM WS-ERROR-LINE.
+
+       C100-PROCESS-TRANSACTION.
+           PERFORM R100-READ-SALESTRANS
+           EVALUATE TRUE
+                WHEN WS-SALESTRANS-EOF
+                     PERFORM W300-WRITE-COUNTERS
+                WHEN TRANS-ADD
+                     MOVE TRANS-DATA TO WS-TRANS-MAINTENANCE
+                     PERFORM C100-PROCESS-ADD
+      *               PERFORM W210-WRITE-MASTER-RECORD
+                     PERFORM U300-PRINT-TRANSACTION-LINE
+                WHEN TRANS-DEL
+      *               MOVE TRANS-DATA TO WS-TRANS-MAINTENANCE
+                     PERFORM C200-PROCESS-DEL
+                     PERFORM U300-PRINT-TRANSACTION-LINE
+                WHEN TRANS-CHG
+                     MOVE TRANS-DATA TO WS-TRANS-MAINTENANCE
+                     PERFORM C300-PROCESS-CHG
+                WHEN TRANS-SALE
+                     MOVE TRANS-DATA TO WS-TRANS-SALE
+                     PERFORM C400-PROCESS-SALE
+                WHEN TRANS-RET
+                     MOVE TRANS-DATA TO WS-TRANS-RETURN
+                     PERFORM C500-PROCESS-RETURN
+           END-EVALUATE.
+
+       C100-PROCESS-ADD.
+           COMPUTE WS-ADD-COUNTER = WS-ADD-COUNTER + 1
+           END-COMPUTE
+           MOVE TRANS-SALESPERSON-NO TO SALESPERSON-NO
+           PERFORM U100-MOVE-TRANS-TO-SLSP
+           MOVE ZEROES TO SALESPERSON-GROSS-SALES
+           MOVE ZEROES TO SALESPERSON-RETURN-SALES
+           MOVE 'ADD' TO WS-TRANS-TYPE
+           MOVE ' ' TO WS-TRANS-CHNGE-DATA
+           WRITE SALESPERSON-MASTER
+            INVALID KEY MOVE 'PROBLEM WRITING MASTER STATUS IS:'
+                               TO WS-ER-PROBLEM.
+
+       C200-PROCESS-DEL.
+           COMPUTE WS-DEL-COUNTER = WS-DEL-COUNTER + 1
+           END-COMPUTE
+           MOVE TRANS-SALESPERSON-NO TO SALESPERSON-NO
+           PERFORM U100-MOVE-TRANS-TO-SLSP
+           MOVE 'DELETE' TO WS-TRANS-TYPE
+           MOVE ' ' TO WS-TRANS-CHNGE-DATA
+           DELETE SALESMAST RECORD
+            INVALID KEY MOVE 'PROBLEM DELETING MASTER STATUS IS:'
+                               TO WS-ER-PROBLEM.
+       C300-PROCESS-CHG.
+           COMPUTE WS-CHANGE-COUNTER = WS-CHANGE-COUNTER + 1
+           END-COMPUTE
+           MOVE TRANS-SALESPERSON-NO TO SALESPERSON-NO
+           READ SALESMAST
+                INVALID KEY MOVE 'PROBLEM GETTING MASTER STATUS IS:'
+                               TO WS-ER-PROBLEM
+           END-READ.
+           PERFORM U100-MOVE-TRANS-TO-SLSP
+           MOVE 'CHANGE' TO WS-TRANS-TYPE
+           MOVE ' ' TO WS-TRANS-CHNGE-DATA
+           REWRITE SALESPERSON-MASTER
+                INVALID KEY MOVE 'PROBLEM REWRITING MASTER STATUS IS:'
+                         TO WS-ER-PROBLEM
+           END-REWRITE.
+           IF WS-IN-STATUS = '00' OR WS-IN-STATUS = '02'
+      *  02 STATUS MEANS DUPLICATE WRITTEN TO AIX WHICH IS OK
+                PERFORM U300-PRINT-TRANSACTION-LINE
+           ELSE
+                MOVE TRANS-NO TO WS-ERR-TRN-NO
+                MOVE 'PROBLEM DOING XXXXX STATUS IS:' TO WS-ER-PROBLEM
+                MOVE WS-IN-STATUS TO WS-ERR-IDX-STATUS
+                PERFORM U400-ERROR-VALIDATION
+           END-IF.
+
+       C400-PROCESS-SALE.
+           COMPUTE WS-SALES-COUNTER = WS-SALES-COUNTER + 1.
+
+           MOVE TRANS-SALESPERSON-NO TO SALESPERSON-NO.
+           READ SALESMAST
+                INVALID KEY MOVE 'PROBLEM GETTING MASTER STATUS IS:'
+                               TO WS-ER-PROBLEM
+           END-READ.
+           MOVE 'SALE' TO WS-TRANS-TYPE.
+
+           COMPUTE WS-SALES-TEMP ROUNDED = WS-SALES-AMOUNT -
+                (WS-SALES-AMOUNT * WS-DISCOUNT-PCT).
+
+           COMPUTE SALESPERSON-GROSS-SALES ROUNDED =
+                        SALESPERSON-GROSS-SALES + WS-SALES-TEMP.
+      *    DISPLAY WS-SALES-AMOUNT
+      *    DISPLAY WS-DISCOUNT-PCT
+      *    DISPLAY WS-SALES-TEMP
+      *    DISPLAY SALESPERSON-GROSS-SALES
+      *    DISPLAY SALESPERSON-LAST-NAME
+           MOVE WS-SALES-TEMP   TO WS-SALES-TRANS-AMT.
+           MOVE WS-SALES-TRANS-AMT  TO WS-TRANS-CHNGE-DATA.
+
+           REWRITE SALESPERSON-MASTER
+                INVALID KEY MOVE 'PROBLEM REWRITING MASTER STATUS IS:'
+                         TO WS-ER-PROBLEM
+           END-REWRITE.
+
+           IF WS-IN-STATUS = '00' OR WS-IN-STATUS = '02'
+      *  02 STATUS MEANS DUPLICATE WRITTEN TO AIX WHICH IS OK
+                PERFORM U300-PRINT-TRANSACTION-LINE
+           ELSE
+                MOVE TRANS-NO TO WS-ERR-TRN-NO
+                MOVE 'PROBLEM DOING XXXXX STATUS IS:' TO WS-ER-PROBLEM
+                MOVE WS-IN-STATUS TO WS-ERR-IDX-STATUS
+                PERFORM U400-ERROR-VALIDATION
+           END-IF.
+
+       C500-PROCESS-RETURN.
+           COMPUTE WS-RETURN-COUNTER = WS-RETURN-COUNTER + 1
+           END-COMPUTE
+           MOVE TRANS-SALESPERSON-NO TO SALESPERSON-NO
+           READ SALESMAST
+                INVALID KEY MOVE 'PROBLEM GETTING MASTER STATUS IS:'
+                               TO WS-ER-PROBLEM
+           END-READ.
+           MOVE WS-RETURN-AMOUNT TO WS-RET-SALES
+           MOVE 'RETURN' TO WS-TRANS-TYPE
+           COMPUTE SALESPERSON-RETURN-SALES =
+                        SALESPERSON-RETURN-SALES + WS-RETURN-AMOUNT
+      *     END-COMPUTE
+           REWRITE SALESPERSON-MASTER
+                INVALID KEY MOVE 'PROBLEM WRITING MASTER STATUS IS:'
+                         TO WS-ER-PROBLEM
+           END-REWRITE.
+           COMPUTE WS-RET-SALES = WS-RET-SALES * -1
+           END-COMPUTE
+
+           MOVE WS-RET-SALES TO WS-RET-TRANS-AMNT
+           MOVE WS-RET-TRANS-AMNT TO WS-TRANS-CHNGE-DATA
+
+           IF WS-IN-STATUS = '00' OR WS-IN-STATUS = '02'
+      *  02 STATUS MEANS DUPLICATE WRITTEN TO AIX WHICH IS OK
+                PERFORM U300-PRINT-TRANSACTION-LINE
+           ELSE
+                MOVE TRANS-NO TO WS-ERR-TRN-NO
+                MOVE 'PROBLEM DOING XXXXX STATUS IS:' TO WS-ER-PROBLEM
+                MOVE WS-IN-STATUS TO WS-ERR-IDX-STATUS
+                PERFORM U400-ERROR-VALIDATION
+           END-IF.
+
+       W100-WRITE-HEADERS.
+           COMPUTE PG-COUNTER = PG-COUNTER + 1
+           MOVE PG-COUNTER TO WS-HL1-PAGENO
+           WRITE PRNT-REC FROM WS-HEADING-LINE-1
+           WRITE PRNT-REC FROM WS-HEADING-LINE-2
+           WRITE PRNT-REC FROM WS-HEADING-LINE-3.
+
+       W300-WRITE-COUNTERS.
+           MOVE WS-ADD-COUNTER TO WS-ADD-HCTR
+           MOVE WS-DEL-COUNTER TO WS-DEL-HCTR
+           MOVE WS-CHANGE-COUNTER TO WS-CHANGE-HCTR
+           MOVE WS-SALES-COUNTER TO WS-SALES-HCTR
+           MOVE WS-INVALID-COUNTER TO WS-INVALID-HCTR
+           MOVE WS-RETURN-COUNTER TO WS-RETURN-HCTR
+           WRITE PRNT-REC FROM WS-SALES-CTR-H1
+           WRITE PRNT-REC FROM WS-RETURN-CTR-H2
+           WRITE PRNT-REC FROM WS-ADD-CTR-H3
+           WRITE PRNT-REC FROM WS-DEL-CTR-H4
+           WRITE PRNT-REC FROM WS-CHANGE-CTR-H5.
+           WRITE PRNT-REC FROM WS-INVALID-CTR-H6.
+
+       R100-READ-SALESTRANS.
+           READ SALESTRANS
+              AT END
+                   MOVE "Y" TO WS-SALESTRANS-EOF-SWITCH.

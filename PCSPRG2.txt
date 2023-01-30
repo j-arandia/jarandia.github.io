@@ -1,0 +1,420 @@
+      *************************************************************
+      *                    ABC CORPORATION                        *
+      *                                                           *
+      *              COBOL Z/OS PROGRAM DESCRIPTION               *
+      *************************************************************
+      * PROGRAM DESCRIPTION:                                      *
+      * This program reads in a data of salesperson in different  *
+      * Prints the data and computes each salesperson net sales   *
+      * and commission. This program also prints the branch totals*
+      * and the grand totals.                                     *
+      *                                                           *
+      * INPUT DD NAME     FILE IDENTIFIER     FILE DESCRIPTION    *
+      * --------------    ---------------     ----------------    *
+      * SLSPMAST           SALES-MASTER        File containing    *
+      *                                        salesperson info   *
+      *                                                           *
+      * OUTPUT DD  NAME    FILE IDENTIFIER     FILE DESCRITION    *
+      * ---------------    ---------------     ---------------    *
+      * SALES-REPORT         PRNT-REC          Print file summary *
+      *                                        information        *
+      *                                                           *
+      * COPYBOOKS          DESCRIPTION                            *
+      * ---------          -----------                            *
+      * CC2SLSP          Fields required for individual sales-    *
+      *                    person information input               *
+      *                                                           *
+      *************************************************************
+      *************************************************************
+      *                 C H A N G E   L O G                       *
+      *************************************************************
+      *                                                           *
+      * VER. NO.  CHANGED BY           IMPLEMENTATION DATE        *
+      * --------  ----------           -------------------        *
+      * PCS2PRG2  JASSIKA ARANDIA       AUG. 10, 2020             *
+      * DESCRIPTION OF CHANGE:                                    *
+      * ----------------------                                    *
+      *                                                           *
+      *************************************************************
+
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID.  PCS2PRG2.
+       AUTHOR. JASSIKA ARANDIA.
+       ENVIRONMENT DIVISION.
+       CONFIGURATION SECTION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+            SELECT SALES-MASTER   ASSIGN TO SLSPKS
+             ORGANIZATION IS INDEXED
+             ACCESS IS SEQUENTIAL
+             RECORD KEY IS SALESPERSON-NO
+             ALTERNATE KEY IS SALESPERSON-BRANCH-NO WITH DUPLICATES
+                      FILE STATUS IS WS-IN-STATUS.
+
+            SELECT SALES-REPORT    ASSIGN TO PRNT.
+
+       DATA DIVISION.
+
+       FILE SECTION.
+       FD  SALES-MASTER.
+      *     COPY CCS2SLSP.
+       01  SALESPERSON-MASTER.
+           05 SALESPERSON-NO           PIC 9(5).
+           05 SALESPERSON-LAST-NAME    PIC X(15).
+           05 SALESPERSON-FIRST-NAME   PIC X(10).
+           05 SALESPERSON-GROSS-SALES  PIC 9(5)V99.
+           05 SALESPERSON-RETURN-SALES PIC 9(4)V99.
+           05 SALESPERSON-BRANCH-NO    PIC X(5).
+           05 SALESPERSON-COMM-RATE    PIC V9999.
+       01  INPUT-REC                   PIC X(52).
+
+       FD  SALES-REPORT
+           RECORDING MODE IS F.
+       01  PRNT-REC                   PIC X(125).
+
+
+       WORKING-STORAGE SECTION.
+
+        01  WS-HEADING-LINE-1.
+           05  FILLER                 PIC X(5)      VALUE SPACES.
+           05  FILLER                 PIC X(6)      VALUE "PAGE  ".
+           05  WS-HL1-PAGENO          PIC Z9.
+           05  FILLER                 PIC X(36)     VALUE SPACES.
+           05  FILLER                 PIC X(4)      VALUE "ABC ".
+           05  FILLER                 PIC X(11)     VALUE "CORPORATION".
+           05  FILLER                 PIC X(30)     VALUE SPACES.
+           05  WS-HL1-MONTH           PIC 9(2).
+           05  FILLER                 PIC X(1)      VALUE "/".
+           05  WS-HL1-DAY             PIC 9(2).
+           05  FILLER                 PIC X(1)      VALUE "/".
+           05  WS-HL1-YEAR            PIC 9(4).
+           05  FILLER                 PIC X         VALUE SPACES.
+        01  WS-HEADING-LINE-2.
+           05  FILLER                 PIC X(46)      VALUE SPACES.
+           05  FILLER                 PIC X(5)       VALUE 'SALES'.
+           05  FILLER                 PIC X(7)       VALUE 'PERSON '.
+           05  FILLER                 PIC X(3)       VALUE 'BY '.
+           05  FILLER                 PIC X(6)       VALUE 'BRANCH'.
+       01  WS-HEADING-LINE-3.
+           05  FILLER                 PIC X(8)       VALUE 'BRANCH: '.
+           05  LINE-BRANCH-NO         PIC 9(3).
+       01  WS-HEADING-LINE-4.
+           05  FILLER                 PIC X(8)      VALUE 'DEPT NO.'.
+           05  FILLER                 PIC X(3)      VALUE SPACES.
+           05  FILLER                 PIC X(10)     VALUE 'LAST NAME '.
+           05  FILLER                 PIC X(10)     VALUE 'FIRST NAME'.
+           05  FILLER                 PIC X(3)      VALUE SPACES.
+           05  FILLER                 PIC X(11)     VALUE 'GROSS SALES'.
+           05  FILLER                 PIC X(7)      VALUE SPACES.
+           05  FILLER                 PIC X(7)      VALUE 'RETURNS'.
+           05  FILLER                 PIC X(9)      VALUE SPACES.
+           05  FILLER                 PIC X(9)      VALUE 'NET SALES'.
+           05  FILLER                 PIC X(10)      VALUE SPACES.
+           05  FILLER                 PIC X(9)      VALUE 'COMMISION'.
+           05  FILLER                 PIC X(7)      VALUE SPACES.
+           05  FILLER                 PIC X(6)      VALUE 'RATING'.
+       01  WS-SLSP-LINE.
+           05  FILLER                 PIC X(2)      VALUE SPACES.
+           05  WS-SLSP-DEPT-NO        PIC 9(2).
+           05  FILLER                 PIC X(7)      VALUE SPACES.
+           05  WS-SLSP-LNAME          PIC X(12).
+           05  WS-SLSP-FNAME          PIC X(10).
+           05  FILLER                 PIC X(3)     VALUE SPACES.
+           05  WS-SLSP-GROSS          PIC $$$,$$$.99.
+           05  FILLER                 PIC X(5)     VALUE SPACES.
+           05  WS-SLSP-RETURNS        PIC $$,$$$.99.
+           05  FILLER                 PIC X(7)     VALUE SPACES.
+           05  WS-SLSP-NET-SALES      PIC $$$$,$$$.99.
+           05  FILLER                 PIC X(9)     VALUE SPACES.
+           05  WS-SLSP-COMM-EARNED    PIC $$$,$$$.99.
+           05  FILLER                 PIC X(7)     VALUE SPACES.
+           05  WS-SLSP-RATE           PIC X(5).
+       01  DEPT-TOTAL-LINE.
+           05 FILLER                  PIC X(6)      VALUE 'TOTAL '.
+           05 FILLER                  PIC X(6)      VALUE 'DEPART'.
+           05 FILLER                  PIC X(6)      VALUE 'MENT: '.
+           05 WS-DTL-N0               PIC 9(2).
+           05 FILLER                  PIC X(13)     VALUE SPACES.
+           05 WS-DTL-GROSS            PIC $$,$$$,$$$.99.
+           05 FILLER                  PIC X(3)     VALUE SPACES.
+           05 WS-DTL-RETURN           PIC $$$,$$$.99.
+           05 FILLER                  PIC X(5)     VALUE SPACES.
+           05 WS-DTL-NET              PIC $$,$$$,$$$.99.
+           05 FILLER                  PIC X(5)     VALUE SPACES.
+           05 WS-DTL-COMM             PIC $$$$,$$$.99.
+
+       01  BRANCH-TOTAL-LINE.
+           05 FILLER                  PIC X(6)      VALUE 'TOTAL '.
+           05 FILLER                  PIC X(8)      VALUE 'BRANCH: '.
+           05 WS-SLSP-BRANCH-NO       PIC 9(3).
+           05 FILLER                  PIC X(17)     VALUE SPACES.
+           05 WS-BTL-GROSS            PIC $$,$$$,$$$.99.
+           05 FILLER                  PIC X(3)     VALUE SPACES.
+           05 WS-BTL-RETURN           PIC $$$,$$$.99.
+           05 FILLER                  PIC X(5)     VALUE SPACES.
+           05 WS-BTL-NET              PIC $$,$$$,$$$.99.
+           05 FILLER                  PIC X(8)     VALUE SPACES.
+           05 WS-BTL-COMM             PIC $$$,$$$.99.
+        01  SINGLE-UNDERLINES.
+           05  FILLER                PIC X(34)   VALUE SPACES.
+           05  FILLER                PIC X(13)   VALUE '-------------'.
+           05  FILLER                PIC X(3)    VALUE SPACES.
+           05  FILLER                PIC X(13)   VALUE '-------------'.
+           05  FILLER                PIC X(6)    VALUE SPACES.
+           05  FILLER                PIC X(13)   VALUE '-------------'.
+           05  FILLER                PIC X(4)    VALUE SPACES.
+           05  FILLER                PIC X(13)   VALUE '-------------'.
+
+        01  COMPANY-TOTAL-LINE.
+           05 FILLER                  PIC X(7)      VALUE 'COMPANY'.
+           05 FILLER                  PIC X(1)      VALUE SPACES.
+           05 FILLER                  PIC X(6)      VALUE 'TOTALS'.
+           05 FILLER                  PIC X(20)     VALUE SPACES.
+           05 CTL-GROSS               PIC $$,$$$,$$$.99.
+           05 FILLER                  PIC X(3)     VALUE SPACES.
+           05 CTL-RETURN              PIC $$$,$$$.99.
+           05 FILLER                  PIC X(4)     VALUE SPACES.
+           05 CTL-NET                 PIC $$,$$$,$$$.99.
+           05 FILLER                  PIC X(4)     VALUE SPACES.
+           05 CTL-COMM                PIC $$$$,$$$.99.
+       01  DOUBLE-UNDERLINES.
+           05  FILLER                PIC X(34)   VALUE SPACES.
+           05  FILLER                PIC X(13)   VALUE '============='.
+           05  FILLER                PIC X(3)    VALUE SPACES.
+           05  FILLER                PIC X(13)   VALUE '============='.
+           05  FILLER                PIC X(6)    VALUE SPACES.
+           05  FILLER                PIC X(13)   VALUE '============='.
+           05  FILLER                PIC X(6)    VALUE SPACES.
+           05  FILLER                PIC X(13)   VALUE '============='.
+
+        01 WS-PAGE-NUM.
+           05 PG-COUNTER               PIC S9(3)  COMP-3    VALUE ZERO.
+
+        01  WS-CALC-FIELDS.
+           05 WS-NET-SALES            PIC S9(7)V99  COMP-3 VALUE ZERO.
+           05 WS-COMMISSION-EARNED    PIC S9(7)V99  COMP-3 VALUE ZERO.
+           05 WS-RATING-SUB           PIC 9(2)     COMP.
+           05 WS-OLD-BRANCH-NO        PIC 9(3)            VALUE ZERO.
+           05 WS-OLD-DEPT-NO          PIC 9(2)            VALUE ZERO.
+           05 WS-SALESPERSON-COUNT    PIC 9(2)     COMP-3 VALUE ZERO.
+
+           05 BRANCH-TOTAL-GROSS      PIC S9(7)V99  COMP-3 VALUE ZERO.
+           05 BRANCH-TOTAL-RETURN     PIC S9(5)V99  COMP-3 VALUE ZERO.
+           05 BRANCH-TOTAL-NET        PIC S9(7)V99  COMP-3 VALUE ZERO.
+           05 BRANCH-TOTAL-COMM       PIC S9(7)V99  COMP-3 VALUE ZERO.
+
+           05 COMPNY-TOTAL-GROSS       PIC S9(8)V99  COMP-3 VALUE ZERO.
+           05 COMPNY-TOTAL-RETURN      PIC S9(6)V99  COMP-3 VALUE ZERO.
+           05 COMPNY-TOTAL-NET         PIC S9(8)V99  COMP-3 VALUE ZERO.
+           05 COMPNY-TOTAL-COMM        PIC S9(8)V99  COMP-3 VALUE ZERO.
+
+           05 DEPT-TOTAL-GROSS        PIC S9(7)V99  COMP-3 VALUE ZERO.
+           05 DEPT-TOTAL-RETURN       PIC S9(5)V99  COMP-3 VALUE ZERO.
+           05 DEPT-TOTAL-NET          PIC S9(8)V99  COMP-3 VALUE ZERO.
+           05 DEPT-TOTAL-COMM         PIC S9(7)V99  COMP-3 VALUE ZERO.
+
+       01 WS-CURRENT-DATE.
+           05 WS-DATE-YEAR            PIC X(4).
+           05 WS-DATE-MONTH           PIC XX.
+           05 WS-DATE-DAY             PIC XX.
+       01 WS-BRANCH-KEY.
+           03 WS-BRANCH-NO            PIC 9(3)         VALUE ZERO.
+           03 WS-DEPT-NO              PIC 9(2)         VALUE ZERO.
+
+       01 WS-SWITCHES.
+           05  WS-SALESMAST-EOF-SWITCH   PIC X         VALUE "N".
+               88  WS-SALESMAST-NOT-EOF                VALUE "N".
+               88  WS-SALESMAST-EOF                    VALUE "Y".
+           05  WS-IN-STATUS           PIC XX           VALUE SPACES.
+
+       01 WS-RECORD-SWITCHES.
+           05  WS-FIRST-RECORD        PIC X            VALUE "N".
+               88  WS-RECORD-YES                       VALUE "Y".
+               88  WS-RECORD-NO                        VALUE "N".
+
+       01 WS-BLANK-LINES             PIC X(150) VALUE SPACES.
+       01 WS-PAGE-FIELD.
+           05 PAGE-COUNT              PIC S9(3)     VALUE ZERO.
+           05 LINE-COUNT              PIC S9(3)     VALUE +99.
+           05 LINES-ON-PAGE           PIC S9(3)     VALUE +55.
+           05 SPACE-CONTROL           PIC S9.
+       PROCEDURE DIVISION.
+       A000-MAINLINE.
+           OPEN INPUT SALES-MASTER
+                OUTPUT SALES-REPORT.
+                PERFORM B000-START-AIX.
+           IF WS-IN-STATUS NOT EQUAL "00"
+               THEN
+               DISPLAY "FILE ERROR WS-IN-STATUS = ", WS-IN-STATUS
+               DISPLAY "CHECK JCL AND COBOL FILE DEFINITIONS MATCH"
+           ELSE
+               PERFORM U100-GET-CURRENT-DATE
+               PERFORM C300-PREPARE-SALES-LINES
+                    UNTIL WS-SALESMAST-EOF
+               CLOSE SALES-MASTER
+                     SALES-REPORT
+           END-IF.
+           STOP RUN.
+
+       B000-START-AIX.
+           MOVE LOW-VALUE TO SALESPERSON-BRANCH-NO
+           START SALES-MASTER KEY IS >= SALESPERSON-BRANCH-NO
+              INVALID KEY MOVE 'Y' TO WS-SALESMAST-EOF-SWITCH.
+
+
+       W100-PRINT-HEADERS.
+            COMPUTE PG-COUNTER = PG-COUNTER + 1
+            COMPUTE WS-SALESPERSON-COUNT = WS-SALESPERSON-COUNT + 1
+            MOVE PG-COUNTER TO WS-HL1-PAGENO
+            WRITE PRNT-REC FROM WS-HEADING-LINE-1.
+            WRITE PRNT-REC FROM WS-HEADING-LINE-2.
+            MOVE SALESPERSON-BRANCH-NO TO WS-BRANCH-KEY
+            MOVE WS-BRANCH-NO TO LINE-BRANCH-NO.
+            MOVE WS-BRANCH-NO TO WS-SLSP-BRANCH-NO.
+            WRITE PRNT-REC FROM WS-HEADING-LINE-3.
+            WRITE PRNT-REC FROM WS-HEADING-LINE-4.
+
+
+        W100-PRINT-SLSP-LINE.
+            MOVE WS-DEPT-NO TO WS-SLSP-DEPT-NO
+            MOVE SALESPERSON-LAST-NAME TO WS-SLSP-LNAME
+            MOVE SALESPERSON-FIRST-NAME TO WS-SLSP-FNAME
+            MOVE SALESPERSON-GROSS-SALES TO WS-SLSP-GROSS
+            MOVE SALESPERSON-RETURN-SALES TO WS-SLSP-RETURNS
+            MOVE WS-NET-SALES TO WS-SLSP-NET-SALES
+            MOVE WS-COMMISSION-EARNED TO WS-SLSP-COMM-EARNED
+            WRITE PRNT-REC FROM WS-SLSP-LINE.
+
+        1400-ZERO-DATA.
+            MOVE ZEROS TO WS-NET-SALES, WS-COMMISSION-EARNED,
+            BRANCH-TOTAL-GROSS, BRANCH-TOTAL-RETURN, BRANCH-TOTAL-NET,
+            BRANCH-TOTAL-COMM, COMPNY-TOTAL-GROSS, COMPNY-TOTAL-RETURN,
+            COMPNY-TOTAL-NET, COMPNY-TOTAL-COMM, DEPT-TOTAL-GROSS,
+            DEPT-TOTAL-RETURN, DEPT-TOTAL-NET, DEPT-TOTAL-COMM.
+
+        W300-MOVE-BRANCH.
+            MOVE BRANCH-TOTAL-GROSS TO WS-BTL-GROSS
+            MOVE BRANCH-TOTAL-RETURN TO WS-BTL-RETURN
+            MOVE BRANCH-TOTAL-NET TO WS-BTL-NET
+            MOVE BRANCH-TOTAL-COMM TO WS-BTL-COMM.
+
+        W400-WRITE-BRANCH-LINE.
+            WRITE PRNT-REC FROM BRANCH-TOTAL-LINE
+               AFTER ADVANCING 1 LINE.
+           WRITE PRNT-REC FROM SINGLE-UNDERLINES.
+
+        W500-PRINT-COMP-TOTALS.
+            MOVE COMPNY-TOTAL-GROSS TO CTL-GROSS
+            MOVE COMPNY-TOTAL-RETURN TO CTL-RETURN
+            MOVE COMPNY-TOTAL-NET TO CTL-NET
+            MOVE COMPNY-TOTAL-COMM TO CTL-COMM
+            WRITE PRNT-REC FROM COMPANY-TOTAL-LINE
+                    AFTER ADVANCING 1 LINE.
+            WRITE PRNT-REC FROM DOUBLE-UNDERLINES.
+
+       W400-PRINT-DEPT-LINE.
+           MOVE WS-OLD-DEPT-NO TO WS-DTL-N0
+           MOVE DEPT-TOTAL-GROSS TO WS-DTL-GROSS
+           MOVE DEPT-TOTAL-RETURN TO WS-DTL-RETURN
+           MOVE WS-NET-SALES TO WS-DTL-NET
+           MOVE DEPT-TOTAL-NET TO WS-DTL-COMM
+           WRITE PRNT-REC FROM DEPT-TOTAL-LINE
+               AFTER ADVANCING 1 LINE.
+
+        C300-PREPARE-SALES-LINES.
+           PERFORM R100-READ-INPUT.
+           MOVE SALESPERSON-BRANCH-NO TO WS-BRANCH-KEY
+           IF WS-SALESMAST-EOF-SWITCH = 'N' THEN
+               COMPUTE WS-SALESPERSON-COUNT = WS-SALESPERSON-COUNT + 1
+               END-COMPUTE
+               IF WS-SALESPERSON-COUNT = 1 THEN
+                   MOVE WS-BRANCH-NO TO WS-OLD-BRANCH-NO
+                   MOVE WS-DEPT-NO TO WS-OLD-DEPT-NO
+                   PERFORM W100-PRINT-HEADERS
+                   PERFORM U200-CALCULATE-SALESPERSON
+                   PERFORM U700-CALCULATE-DEPARTMENT
+                   PERFORM U300-CALCULATE-BRANCH
+                   PERFORM U400-CALCULATE-COMPANY
+                   PERFORM W100-PRINT-SLSP-LINE
+               ELSE
+                    IF WS-OLD-BRANCH-NO NOT EQUAL
+                        WS-BRANCH-NO
+                       PERFORM U500-BREAK-CONTROL
+                       PERFORM U400-CALCULATE-COMPANY
+                    END-IF
+                    IF WS-OLD-DEPT-NO NOT EQUAL WS-DEPT-NO
+                       PERFORM U600-DEPT-CONTROL-BREAK
+                    END-IF
+                        PERFORM U200-CALCULATE-SALESPERSON
+                        PERFORM W100-PRINT-SLSP-LINE
+                        PERFORM U700-CALCULATE-DEPARTMENT
+                        PERFORM U300-CALCULATE-BRANCH
+                        PERFORM U400-CALCULATE-COMPANY
+                END-IF
+           ELSE
+               PERFORM U400-CALCULATE-COMPANY
+               PERFORM W300-MOVE-BRANCH
+               PERFORM W400-WRITE-BRANCH-LINE
+               PERFORM W500-PRINT-COMP-TOTALS
+            END-IF.
+
+       U500-BREAK-CONTROL.
+           PERFORM U400-CALCULATE-COMPANY
+           PERFORM W300-MOVE-BRANCH
+           PERFORM W400-PRINT-DEPT-LINE
+           PERFORM W400-WRITE-BRANCH-LINE
+           PERFORM W100-PRINT-HEADERS
+           PERFORM 1400-ZERO-DATA
+           MOVE WS-BRANCH-NO TO WS-OLD-BRANCH-NO
+           MOVE 10 TO WS-OLD-DEPT-NO
+           PERFORM U300-CALCULATE-BRANCH
+           PERFORM U400-CALCULATE-COMPANY.
+
+       U600-DEPT-CONTROL-BREAK.
+           PERFORM W400-PRINT-DEPT-LINE
+           MOVE WS-DEPT-NO TO WS-OLD-DEPT-NO
+           MOVE ZEROS TO DEPT-TOTAL-GROSS, DEPT-TOTAL-RETURN,
+           DEPT-TOTAL-NET, DEPT-TOTAL-COMM.
+
+       U100-GET-CURRENT-DATE.
+           ACCEPT WS-CURRENT-DATE FROM DATE YYYYMMDD
+           MOVE WS-DATE-MONTH TO WS-HL1-MONTH
+           MOVE WS-DATE-DAY TO WS-HL1-DAY
+           MOVE WS-DATE-YEAR TO WS-HL1-YEAR.
+
+       U200-CALCULATE-SALESPERSON.
+           COMPUTE WS-NET-SALES ROUNDED = SALESPERSON-GROSS-SALES -
+               SALESPERSON-RETURN-SALES
+           END-COMPUTE
+           COMPUTE WS-COMMISSION-EARNED ROUNDED = WS-NET-SALES *
+               SALESPERSON-COMM-RATE
+           END-COMPUTE.
+
+      *CALL TO THE PCS2PGR3 SUBPROGRAM FOR RATING
+           CALL 'PCS2PRG3'
+                USING WS-DEPT-NO WS-NET-SALES WS-SLSP-RATE.
+
+       U700-CALCULATE-DEPARTMENT.
+            ADD SALESPERSON-GROSS-SALES TO DEPT-TOTAL-GROSS
+            ADD SALESPERSON-RETURN-SALES TO DEPT-TOTAL-RETURN
+            ADD WS-NET-SALES TO DEPT-TOTAL-NET
+            ADD WS-COMMISSION-EARNED TO DEPT-TOTAL-COMM.
+
+        U300-CALCULATE-BRANCH.
+            ADD SALESPERSON-GROSS-SALES TO BRANCH-TOTAL-GROSS
+            ADD SALESPERSON-RETURN-SALES TO BRANCH-TOTAL-RETURN
+            ADD WS-NET-SALES TO BRANCH-TOTAL-NET
+            ADD WS-COMMISSION-EARNED TO BRANCH-TOTAL-COMM.
+
+        U400-CALCULATE-COMPANY.
+            ADD BRANCH-TOTAL-GROSS TO COMPNY-TOTAL-GROSS
+            ADD BRANCH-TOTAL-RETURN TO COMPNY-TOTAL-RETURN
+            ADD BRANCH-TOTAL-NET TO COMPNY-TOTAL-NET
+            ADD BRANCH-TOTAL-COMM TO COMPNY-TOTAL-COMM.
+
+
+       R100-READ-INPUT.
+           READ SALES-MASTER
+              AT END
+                   MOVE "Y" TO WS-SALESMAST-EOF-SWITCH.
+
